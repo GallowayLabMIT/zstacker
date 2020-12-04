@@ -1,0 +1,6 @@
+[submodule "openvdb"]
+	path = openvdb
+	url = https://github.com/AcademySoftwareFoundation/openvdb.git
+[submodule "libtiff"]
+	path = libtiff
+	url = https://gitlab.com/libtiff/libtiff.git

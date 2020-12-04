@@ -1,3 +1,8 @@
+# Ignore build dir
+build
+# Ignore local vcpkg on windows
+vcpkg
+
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
