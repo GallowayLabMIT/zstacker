@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <iostream>
 
 #include <tiffio.h>
 #include <openvdb/openvdb.h>
@@ -10,24 +11,28 @@ int main()
     TIFF* tif = TIFFOpen("test.tif", "w");
     TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, RESOLUTION);
     TIFFSetField(tif, TIFFTAG_IMAGELENGTH, RESOLUTION);
-    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 32);
+    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
     TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
     TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
+    TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+    TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+    TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
     TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
     TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 
-    uint32_t array[RESOLUTION];
-    for (uint32_t i = 0; i < RESOLUTION; ++i)
+    uint8_t array[RESOLUTION];
+    for (uint8_t i = 0; i < RESOLUTION; ++i)
     {
         // Update the array
-        for (uint32_t j = 0; j < RESOLUTION; ++i)
+        for (uint8_t j = 0; j < RESOLUTION; ++j)
         {
-            array[j] = (i + j) % RESOLUTION;
+            array[j] = ((i + j) % RESOLUTION) * 2;
         }
         TIFFWriteScanline(tif, array, i, 0);
     }
     
     TIFFClose(tif);
+    std::cout << "Finished writing test TIFF\n";
 
     openvdb::initialize();
     // Create a shared pointer to a newly-allocated grid of a built-in type:
@@ -54,8 +59,11 @@ int main()
     // Add the grid pointer to a container.
     openvdb::GridPtrVec grids;
     grids.push_back(grid);
+
+    std::cout << "Finished creating OpenVDB grid\n";
     // Write out the contents of the container.
     file.write(grids);
     file.close();
+    std::cout << "Done writing OpenVDB grid to disk\n";
     return 0;
 }
