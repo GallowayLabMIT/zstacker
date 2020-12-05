@@ -1,7 +1,10 @@
-# Ignore build dir
+# Ignore build dirs
 build
+out
 # Ignore local vcpkg on windows
 vcpkg
+# Ignore .vs folder
+.vs
 
 CMakeLists.txt.user
 CMakeCache.txt

@@ -26,10 +26,19 @@ endif()
 add_subdirectory(openvdb)
 add_subdirectory(libtiff)
 
-if(WIN32)
-    add_dependencies(openvdb_static copy-tbb-debug-bin copy-tbb-debug-lib)
-endif()
 
 add_executable(zstacker src/main.cpp)
 
 target_link_libraries(zstacker PRIVATE openvdb tiff)
+
+if(WIN32)
+    add_dependencies(openvdb_static copy-tbb-debug-bin copy-tbb-debug-lib)
+    # Ensure that we copy DLLs over post-build
+    add_custom_command(TARGET zstacker POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/installed/x64-windows/bin"
+        $<TARGET_FILE_DIR:zstacker>)
+    add_custom_command(TARGET zstacker POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:openvdb_shared>
+        $<TARGET_FILE:tiff>
+        $<TARGET_FILE_DIR:zstacker>)
+endif()
