@@ -74,8 +74,14 @@ void makeTiffFog(TIFF* tif)
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
+    // Example argument handling
+    for (int i = 0; i < argc; ++i)
+    {
+        std::cout << argv[i] << "\n";
+    }
+
     openvdb::initialize();
     
     TIFF* tif = TIFFOpen("test.tif", "r");
