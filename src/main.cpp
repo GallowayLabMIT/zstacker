@@ -14,16 +14,6 @@ void makeTiffFog(TIFF* tif)
         openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
     grid->setGridClass(openvdb::GRID_FOG_VOLUME);
     // Name the grid "LevelSetSphere".
-    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, RESOLUTION);
-    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, RESOLUTION);
-    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
-    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
-    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
-    TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-    TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-    TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
-    TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
-    TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
     
     uint32_t width, height;
     TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
@@ -35,8 +25,8 @@ void makeTiffFog(TIFF* tif)
     int &i = ijk[0], &j = ijk[1], &k = ijk[2];
     k = 1;
 //    for each coordinate, gets tiff pixel and sets fog depending on color
-    for (i = 0 - width; i < 0 + width; ++i){
-        for (j = 0 - height; j < 0 + height; ++j){
+    for (i = 0; i < width; ++i){
+        for (j = 0; j < height; ++j){
             int R= TIFFGetR(raster[i*j]);
             grid->setName("channelR");
             if (R > 122.5){
@@ -88,7 +78,12 @@ int main()
 {
     openvdb::initialize();
     
-    TIFF* tif = TIFFOpen("test.tif", "w");
+    TIFF* tif = TIFFOpen("test.tif", "r");
+    if (tif == nullptr)
+    {
+        std::cerr << "Invalid TIF file\n";
+        return 1;
+    }
     makeTiffFog(tif);
     
     TIFFClose(tif);
