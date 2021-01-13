@@ -6,29 +6,9 @@
 
 #define RESOLUTION 100
 
-void makeTiffFog(TIFF* tif,openvdb::FloatGrid::Ptr grid, int k_val)
+void makeTiffFog(TIFF* tif,openvdb::io::File file, int k_val)
 {
-    // creates the 4 color grids
-    openvdb::FloatGrid::Ptr gridR =
-        openvdb::FloatGrid::create(0);
-    gridR->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
-    
-    openvdb::FloatGrid::Ptr gridG =
-        openvdb::FloatGrid::create(0);
-    gridG->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
-    
-    openvdb::FloatGrid::Ptr gridB =
-        openvdb::FloatGrid::create(0);
-    gridB->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
-    
-    openvdb::FloatGrid::Ptr gridA =
-        openvdb::FloatGrid::create(0);
-    gridA->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
-    
+    file.open();
     
 //    gets TIFF dimensions/opens the raster for editing
     uint32_t width, height;
@@ -44,37 +24,32 @@ void makeTiffFog(TIFF* tif,openvdb::FloatGrid::Ptr grid, int k_val)
     for (i = 0; i < width; ++i){
         for (j = 0; j < height; ++j){
             int R= TIFFGetR(raster[i*j]);
-            gridR->setName("channelR");
+            
+            openvdb::GridBase::Ptr baseGridR = file.readGrid("channelR");
+            openvdb::FloatGrid::Ptr gridR = openvdb::gridPtrCast<openvdb::FloatGrid>(baseGridR);
             openvdb::FloatGrid::Accessor accessorR= gridR->getAccessor();
-            accessorR.setValue(ijk, R);
+            accessorR.setValue(ijk, R/255);
             
+            openvdb::GridBase::Ptr baseGridG = file.readGrid("channelG");
+            openvdb::FloatGrid::Ptr gridG = openvdb::gridPtrCast<openvdb::FloatGrid>(baseGridG);
             int G= TIFFGetG(raster[i*j]);
-            gridG->setName("channelG");
             openvdb::FloatGrid::Accessor accessorG= gridG->getAccessor();
-            accessorG.setValue(ijk, G);
+            accessorG.setValue(ijk, G/255);
             
+            openvdb::GridBase::Ptr baseGridB = file.readGrid("channelB");
+            openvdb::FloatGrid::Ptr gridB = openvdb::gridPtrCast<openvdb::FloatGrid>(baseGridB);
             int B= TIFFGetB(raster[i*j]);
-            gridB->setName("channelB");
             openvdb::FloatGrid::Accessor accessorB= gridB->getAccessor();
-            accessorB.setValue(ijk, B);
+            accessorB.setValue(ijk, B/255);
             
+            openvdb::GridBase::Ptr baseGridA = file.readGrid("channelA");
+            openvdb::FloatGrid::Ptr gridA = openvdb::gridPtrCast<openvdb::FloatGrid>(baseGridA);
             int A= TIFFGetA(raster[i*j]);
-            gridA->setName("channelA");
             openvdb::FloatGrid::Accessor accessorA= gridA->getAccessor();
-            accessorA.setValue(ijk, A);
+            accessorA.setValue(ijk, A/255);
+            
         }
     }
-    
-    // Create a VDB file object.
-    openvdb::io::File file("tiffgrid.vdb");
-    // Add the grid pointer to a container.
-    openvdb::GridPtrVec grids;
-    grids.push_back(gridR);
-    grids.push_back(gridG);
-    grids.push_back(gridB);
-    grids.push_back(gridA);
-    // Write out the contents of the container.
-    file.write(grids);
     file.close();
     _TIFFfree(raster);
 }
@@ -85,13 +60,51 @@ int main(int argc, char *argv[])
 
     openvdb::initialize();
     
-    openvdb::FloatGrid::Ptr grids =
+    // Create a VDB file object.
+    openvdb::io::File file("tiffgrid.vdb");
+    
+    openvdb::FloatGrid::Ptr big_grid =
         openvdb::FloatGrid::create(0);
-    grids->setTransform(
+    big_grid->setTransform(
         openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
-    grids->setGridClass(openvdb::GRID_FOG_VOLUME);
+    big_grid->setGridClass(openvdb::GRID_FOG_VOLUME);
     // Name the grid "LevelSetSphere".
     
+    // creates the 4 color grids
+    openvdb::FloatGrid::Ptr gridR =
+        openvdb::FloatGrid::create(0);
+    gridR->setTransform(
+        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+    gridR->setName("channelR");
+    
+    openvdb::FloatGrid::Ptr gridG =
+        openvdb::FloatGrid::create(0);
+    gridG->setTransform(
+        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+    gridG->setName("channelG");
+    
+    openvdb::FloatGrid::Ptr gridB =
+        openvdb::FloatGrid::create(0);
+    gridB->setTransform(
+        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+    gridB->setName("channelB");
+    
+    openvdb::FloatGrid::Ptr gridA =
+        openvdb::FloatGrid::create(0);
+    gridA->setTransform(
+        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+    gridA->setName("channelA");
+    
+    
+    // Add the grid pointer to a container.
+    openvdb::GridPtrVec grids;
+    grids.push_back(gridR);
+    grids.push_back(gridG);
+    grids.push_back(gridB);
+    grids.push_back(gridA);
+    // Write out the contents of the container.
+    file.write(grids);
+    file.close();
     // argument handling
     for (int i = 1; i < argc; ++i)
     {
@@ -103,9 +116,8 @@ int main(int argc, char *argv[])
         }
         
     std::cout << "Opening TIFF\n";
-    makeTiffFog(tif, grids, i);
+    makeTiffFog(tif, file, i);
     TIFFClose(tif);
     }
-    
     return 0;
 }
