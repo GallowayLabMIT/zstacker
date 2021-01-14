@@ -35,19 +35,21 @@ void makeTiffFog(
 
     for (i = 0; i < width; ++i){
         for (j = 0; j < height; ++j){
-            int R= TIFFGetR(raster[i*j]);
+            int R= TIFFGetR(raster[j * width + i]);
+            int G= TIFFGetG(raster[j * width + i]);
+            int B= TIFFGetB(raster[j * width + i]);
+            int A= TIFFGetA(raster[j * width + i]);
             
-            accessorR.setValue(ijk, R/255.0);
+            if (R > 30 || G > 30 || B > 30) {
+                accessorR.setValue(ijk, R / 255.0);
 
-            int G= TIFFGetG(raster[i*j]);
-            accessorG.setValue(ijk, G/255.0);
-            
-            int B= TIFFGetB(raster[i*j]);
-            accessorB.setValue(ijk, B/255.0);
-            
-            int A= TIFFGetA(raster[i*j]);
-            accessorA.setValue(ijk, A/255.0);
-            
+                accessorG.setValue(ijk, G / 255.0);
+
+                accessorB.setValue(ijk, B / 255.0);
+
+                accessorA.setValue(ijk, A / 255.0);
+            }
+                
         }
     }
     _TIFFfree(raster);
