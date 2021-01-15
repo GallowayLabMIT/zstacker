@@ -27,7 +27,7 @@ add_subdirectory(openvdb)
 add_subdirectory(libtiff)
 
 
-add_executable(zstacker src/main.cpp)
+add_executable(zstacker src/main.cpp src/ArgLoader.cpp)
 
 target_link_libraries(zstacker PRIVATE openvdb tiff)
 

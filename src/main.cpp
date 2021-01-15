@@ -4,6 +4,8 @@
 #include <tiffio.h>
 #include <openvdb/openvdb.h>
 
+#include "ArgLoader.h"
+
 #define RESOLUTION 100
 
 void makeTiffFog(
@@ -12,7 +14,8 @@ void makeTiffFog(
     openvdb::FloatGrid::Ptr gridG,
     openvdb::FloatGrid::Ptr gridB,
     openvdb::FloatGrid::Ptr gridA,
-    int k_val)
+    int k_val,
+    double threshold_val)
 {
 //    gets TIFF dimensions/opens the raster for editing
     uint32_t width, height;
@@ -40,7 +43,7 @@ void makeTiffFog(
             int B= TIFFGetB(raster[j * width + i]);
             int A= TIFFGetA(raster[j * width + i]);
             
-            if (R > 30 || G > 30 || B > 30) {
+            if (R > threshold_val || G > threshold_val || B > threshold_val) {
                 accessorR.setValue(ijk, R / 255.0);
 
                 accessorG.setValue(ijk, G / 255.0);
@@ -59,10 +62,17 @@ void makeTiffFog(
 int main(int argc, char *argv[])
 {
 
+    ArgLoader argLoader(argc, argv);
+    if (argLoader.threshold < 0 || argLoader.threshold > 255)
+    {
+        std::cerr << "Invalid Threshold - Must be between 0 and 255\n";
+        return 1;
+    }
+    
     openvdb::initialize();
     
     // Create a VDB file object.
-    openvdb::io::File file("tiffgrid.vdb");
+    openvdb::io::File file(argLoader.outputFile);
     
     // creates the 4 color grids
     openvdb::FloatGrid::Ptr gridR =
@@ -93,21 +103,26 @@ int main(int argc, char *argv[])
     gridA->setName("channelA");
     gridA->setGridClass(openvdb::GRID_FOG_VOLUME);
     
+    int i = 1;
     
-    // Add the grid pointer to a container.
-    // argument handling
-    for (int i = 1; i < argc; ++i)
+    for (auto files : std::filesystem::directory_iterator(argLoader.inputFolder))
     {
-        TIFF* tif = TIFFOpen(argv[i], "r");
-        if (tif == nullptr)
-        {
-            std::cerr << "Invalid TIF file\n";
-            return 1;
-        }
-        
-    std::cout << "Opening TIFF\n";
-    makeTiffFog(tif, gridR, gridG, gridB, gridA, i);
-    TIFFClose(tif);
+        std::filesystem::path filepath = files.path();
+        std::string fileExtension = filepath.extension();
+        if (fileExtension == ".tif" || fileExtension == ".tiff")
+            {
+                
+            TIFF* tif = TIFFOpen(filepath.string().c_str(), "r");
+            if (tif == nullptr)
+                {
+                    std::cerr << "Invalid TIF file\n";
+                    return 1;
+                }
+            std::cout << "Opening TIFF\n";
+            makeTiffFog(tif, gridR, gridG, gridB, gridA, i, argLoader.threshold);
+            i += 1;
+            TIFFClose(tif);
+            }
     }
 
     openvdb::GridPtrVec grids;
