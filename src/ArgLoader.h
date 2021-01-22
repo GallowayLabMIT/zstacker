@@ -10,5 +10,6 @@ public:
     
     std::filesystem::path inputFolder;
     std::filesystem::path outputFile;
+    double z_scale;
     double threshold;
 };

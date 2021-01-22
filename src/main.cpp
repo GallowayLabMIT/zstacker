@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     openvdb::initialize();
     
     // Create a VDB file object.
-    openvdb::io::File file(argLoader.outputFile.string());
+    openvdb::io::File file(argLoader.outputFile);
     
     // creates the 4 color grids
     openvdb::FloatGrid::Ptr gridR =
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     for (auto files : std::filesystem::directory_iterator(argLoader.inputFolder))
     {
         std::filesystem::path filepath = files.path();
-        std::string fileExtension = filepath.extension().string();
+        std::string fileExtension = filepath.extension();
         if (fileExtension == ".tif" || fileExtension == ".tiff")
             {
                 
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
                 }
             std::cout << "Opening TIFF\n";
             makeTiffFog(tif, gridR, gridG, gridB, gridA, i, argLoader.threshold);
-            i += 1;
+            i += argLoader.z_scale;
             TIFFClose(tif);
             }
     }
