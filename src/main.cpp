@@ -73,33 +73,36 @@ int main(int argc, char *argv[])
     
     // Create a VDB file object.
     openvdb::io::File file(argLoader.outputFile);
+    openvdb::Vec3R scaler(1.0, 1.0, argLoader.z_scale);
+    openvdb::Mat4R mat;
+    mat.setToScale(scaler);
     
     // creates the 4 color grids
     openvdb::FloatGrid::Ptr gridR =
         openvdb::FloatGrid::create(0);
     gridR->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+        openvdb::math::Transform::createLinearTransform(mat));
     gridR->setName("channelR");
     gridR->setGridClass(openvdb::GRID_FOG_VOLUME);
     
     openvdb::FloatGrid::Ptr gridG =
         openvdb::FloatGrid::create(0);
     gridG->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+        openvdb::math::Transform::createLinearTransform(mat));
     gridG->setName("channelG");
     gridG->setGridClass(openvdb::GRID_FOG_VOLUME);
     
     openvdb::FloatGrid::Ptr gridB =
         openvdb::FloatGrid::create(0);
     gridB->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+        openvdb::math::Transform::createLinearTransform(mat));
     gridB->setName("channelB");
     gridB->setGridClass(openvdb::GRID_FOG_VOLUME);
     
     openvdb::FloatGrid::Ptr gridA =
         openvdb::FloatGrid::create(0);
     gridA->setTransform(
-        openvdb::math::Transform::createLinearTransform(/*voxel size=*/1.0));
+        openvdb::math::Transform::createLinearTransform(mat));
     gridA->setName("channelA");
     gridA->setGridClass(openvdb::GRID_FOG_VOLUME);
     
@@ -120,11 +123,11 @@ int main(int argc, char *argv[])
                 }
             std::cout << "Opening TIFF\n";
             makeTiffFog(tif, gridR, gridG, gridB, gridA, i, argLoader.threshold);
-            i += argLoader.z_scale;
+            i += 1;
             TIFFClose(tif);
             }
     }
-
+    
     openvdb::GridPtrVec grids;
     grids.push_back(gridR);
     grids.push_back(gridG);
