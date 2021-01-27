@@ -1,12 +1,14 @@
 #include <cstdint>
 #include <iostream>
-
+#include <filesystem>
 #include <tiffio.h>
 #include <openvdb/openvdb.h>
 
 #include "ArgLoader.h"
 
 #define RESOLUTION 100
+
+namespace fs = std::filesystem;
 
 void makeTiffFog(
     TIFF* tif,
@@ -72,7 +74,7 @@ int main(int argc, char *argv[])
     openvdb::initialize();
     
     // Create a VDB file object.
-    openvdb::io::File file(argLoader.outputFile);
+    openvdb::io::File file(argLoader.outputFile.string());
     openvdb::Vec3R scaler(1.0, 1.0, argLoader.z_scale);
     openvdb::Mat4R mat;
     mat.setToScale(scaler);
@@ -107,11 +109,15 @@ int main(int argc, char *argv[])
     gridA->setGridClass(openvdb::GRID_FOG_VOLUME);
     
     int i = 1;
+    std::set<fs::path> sorted_by_name;
+    for (auto &entry : fs::directory_iterator(argLoader.inputFolder))
+        sorted_by_name.insert(entry.path());
     
-    for (auto files : std::filesystem::directory_iterator(argLoader.inputFolder))
+    
+    for (auto &filename : sorted_by_name)
     {
-        std::filesystem::path filepath = files.path();
-        std::string fileExtension = filepath.extension();
+        std::filesystem::path filepath = filename;
+        std::string fileExtension = filepath.extension().string();
         if (fileExtension == ".tif" || fileExtension == ".tiff")
             {
                 
@@ -121,6 +127,7 @@ int main(int argc, char *argv[])
                     std::cerr << "Invalid TIF file\n";
                     return 1;
                 }
+            std::cout << filepath;
             std::cout << "Opening TIFF\n";
             makeTiffFog(tif, gridR, gridG, gridB, gridA, i, argLoader.threshold);
             i += 1;
