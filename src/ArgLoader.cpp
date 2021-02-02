@@ -25,6 +25,13 @@ void print_usage()
 
 ArgLoader::ArgLoader(int argc, char* argv[])
 {
+    if (argc < 3)
+    {
+        print_usage();
+        exitEarly = true;
+        return;
+    }
+
     exitEarly = false;
     threshold = 0;
     z_scale = 1.0;

@@ -1,13 +1,15 @@
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
-
+#include <filesystem>
 #include <tiffio.h>
 #include <openvdb/openvdb.h>
 
 #include "ArgLoader.h"
 
 #define RESOLUTION 100
+
+namespace fs = std::filesystem;
 
 void makeTiffFog(
     TIFF* tif,
@@ -109,17 +111,20 @@ int main(int argc, char *argv[])
         gridA->setGridClass(openvdb::GRID_FOG_VOLUME);
 
         int i = 1;
-
-
+        std::set<fs::path> sorted_by_name;
         for (auto path : argLoader.inputFolders)
         {
-            for (auto files : std::filesystem::directory_iterator(path))
+            for (auto& entry : fs::directory_iterator(path))
             {
-                std::filesystem::path filepath = files.path();
+                sorted_by_name.insert(entry.path());
+            }
+
+            for (auto& filename : sorted_by_name)
+            {
+                std::filesystem::path filepath = filename;
                 std::string fileExtension = filepath.extension().string();
                 if (fileExtension == ".tif" || fileExtension == ".tiff")
                 {
-
                     TIFF* tif = TIFFOpen(filepath.string().c_str(), "r");
                     if (tif == nullptr)
                     {
@@ -145,6 +150,11 @@ int main(int argc, char *argv[])
         return 0;
     }
     catch (std::runtime_error & err)
+    {
+        std::cerr << "zstacker: " << err.what() << "\n\tRun 'zstacker -h' to see full help.\n";
+        return 1;
+    }
+    catch (openvdb::Exception & err)
     {
         std::cerr << "zstacker: " << err.what() << "\n\tRun 'zstacker -h' to see full help.\n";
         return 1;
