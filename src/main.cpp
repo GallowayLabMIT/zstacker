@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <iostream>
+#include <stdexcept>
 
 #include <tiffio.h>
 #include <openvdb/openvdb.h>
@@ -62,79 +63,91 @@ void makeTiffFog(
 int main(int argc, char *argv[])
 {
 
-    ArgLoader argLoader(argc, argv);
-    if (argLoader.threshold < 0 || argLoader.threshold > 255)
+    try
     {
-        std::cerr << "Invalid Threshold - Must be between 0 and 255\n";
+        ArgLoader argLoader(argc, argv);
+
+        if (argLoader.exitEarly)
+        {
+            return 0;
+        }
+        openvdb::initialize();
+
+        // Create a VDB file object.
+        openvdb::io::File file(argLoader.outputFile.string());
+        openvdb::Vec3R scaler(1.0, 1.0, argLoader.z_scale);
+        openvdb::Mat4R mat;
+        mat.setToScale(scaler);
+
+        // creates the 4 color grids
+        openvdb::FloatGrid::Ptr gridR =
+            openvdb::FloatGrid::create(0);
+        gridR->setTransform(
+            openvdb::math::Transform::createLinearTransform(mat));
+        gridR->setName("channelR");
+        gridR->setGridClass(openvdb::GRID_FOG_VOLUME);
+
+        openvdb::FloatGrid::Ptr gridG =
+            openvdb::FloatGrid::create(0);
+        gridG->setTransform(
+            openvdb::math::Transform::createLinearTransform(mat));
+        gridG->setName("channelG");
+        gridG->setGridClass(openvdb::GRID_FOG_VOLUME);
+
+        openvdb::FloatGrid::Ptr gridB =
+            openvdb::FloatGrid::create(0);
+        gridB->setTransform(
+            openvdb::math::Transform::createLinearTransform(mat));
+        gridB->setName("channelB");
+        gridB->setGridClass(openvdb::GRID_FOG_VOLUME);
+
+        openvdb::FloatGrid::Ptr gridA =
+            openvdb::FloatGrid::create(0);
+        gridA->setTransform(
+            openvdb::math::Transform::createLinearTransform(mat));
+        gridA->setName("channelA");
+        gridA->setGridClass(openvdb::GRID_FOG_VOLUME);
+
+        int i = 1;
+
+
+        for (auto path : argLoader.inputFolders)
+        {
+            for (auto files : std::filesystem::directory_iterator(path))
+            {
+                std::filesystem::path filepath = files.path();
+                std::string fileExtension = filepath.extension().string();
+                if (fileExtension == ".tif" || fileExtension == ".tiff")
+                {
+
+                    TIFF* tif = TIFFOpen(filepath.string().c_str(), "r");
+                    if (tif == nullptr)
+                    {
+                        std::cerr << "Invalid TIF file\n";
+                        return 1;
+                    }
+                    std::cout << "Opening TIFF\n";
+                    makeTiffFog(tif, gridR, gridG, gridB, gridA, i, argLoader.threshold);
+                    i += 1;
+                    TIFFClose(tif);
+                }
+            }
+        }
+
+        openvdb::GridPtrVec grids;
+        grids.push_back(gridR);
+        grids.push_back(gridG);
+        grids.push_back(gridB);
+        grids.push_back(gridA);
+        // Write out the contents of the container.
+        file.write(grids);
+        file.close();
+        return 0;
+    }
+    catch (std::runtime_error & err)
+    {
+        std::cerr << "zstacker: " << err.what() << "\n\tRun 'zstacker -h' to see full help.\n";
         return 1;
     }
-    
-    openvdb::initialize();
-    
-    // Create a VDB file object.
-    openvdb::io::File file(argLoader.outputFile);
-    openvdb::Vec3R scaler(1.0, 1.0, argLoader.z_scale);
-    openvdb::Mat4R mat;
-    mat.setToScale(scaler);
-    
-    // creates the 4 color grids
-    openvdb::FloatGrid::Ptr gridR =
-        openvdb::FloatGrid::create(0);
-    gridR->setTransform(
-        openvdb::math::Transform::createLinearTransform(mat));
-    gridR->setName("channelR");
-    gridR->setGridClass(openvdb::GRID_FOG_VOLUME);
-    
-    openvdb::FloatGrid::Ptr gridG =
-        openvdb::FloatGrid::create(0);
-    gridG->setTransform(
-        openvdb::math::Transform::createLinearTransform(mat));
-    gridG->setName("channelG");
-    gridG->setGridClass(openvdb::GRID_FOG_VOLUME);
-    
-    openvdb::FloatGrid::Ptr gridB =
-        openvdb::FloatGrid::create(0);
-    gridB->setTransform(
-        openvdb::math::Transform::createLinearTransform(mat));
-    gridB->setName("channelB");
-    gridB->setGridClass(openvdb::GRID_FOG_VOLUME);
-    
-    openvdb::FloatGrid::Ptr gridA =
-        openvdb::FloatGrid::create(0);
-    gridA->setTransform(
-        openvdb::math::Transform::createLinearTransform(mat));
-    gridA->setName("channelA");
-    gridA->setGridClass(openvdb::GRID_FOG_VOLUME);
-    
-    int i = 1;
-    
-    for (auto files : std::filesystem::directory_iterator(argLoader.inputFolder))
-    {
-        std::filesystem::path filepath = files.path();
-        std::string fileExtension = filepath.extension();
-        if (fileExtension == ".tif" || fileExtension == ".tiff")
-            {
-                
-            TIFF* tif = TIFFOpen(filepath.string().c_str(), "r");
-            if (tif == nullptr)
-                {
-                    std::cerr << "Invalid TIF file\n";
-                    return 1;
-                }
-            std::cout << "Opening TIFF\n";
-            makeTiffFog(tif, gridR, gridG, gridB, gridA, i, argLoader.threshold);
-            i += 1;
-            TIFFClose(tif);
-            }
-    }
-    
-    openvdb::GridPtrVec grids;
-    grids.push_back(gridR);
-    grids.push_back(gridG);
-    grids.push_back(gridB);
-    grids.push_back(gridA);
-    // Write out the contents of the container.
-    file.write(grids);
-    file.close();
     return 0;
 }
