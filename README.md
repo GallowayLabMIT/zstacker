@@ -10,7 +10,7 @@ The resulting volume can be rendered into static images or video files.
 
 ## Installation
 
-If on Windows or MacOS (> 10.15), you should be able to use the prebuilt binaries. Download a zip file from the releases tab and unzip to the desired location.
+If on Windows or MacOS (> 10.15), you should be able to use the prebuilt binaries. Download a zip file from the [releases tab](/releases/latest) and unzip to the desired location.
 
 If on another operating system or version, you can compile `zstacker` from the source code. See the below **Developer installation** section for details.
 
